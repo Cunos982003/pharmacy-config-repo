@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_INTERNAL://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: PLAINTEXT_INTERNAL
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_METADATA_LOG_DIR: /var/lib/kafka/data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+
+  kafka-topics:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    command: "bash -c 'echo \"Waiting for Kafka to be ready...\" && until kafka-topics --bootstrap-server kafka:9092 --list | grep -q \"^\"; do sleep 5; done && echo \"Kafka is ready. Creating topics...\" && kafka-topics --bootstrap-server kafka:9092 --create --topic medicine-stock-events --partitions 3 --replication-factor 1 --if-not-exists && kafka-topics --bootstrap-server kafka:9092 --create --topic medicine-price-updates --partitions 1 --replication-factor 1 --if-not-exists && kafka-topics --bootstrap-server kafka:9092 --create --topic pharmacy-notifications --partitions 2 --replication-factor 1 --if-not-exists && echo \"Topics created successfully.\"'"
+    restart: "no"
