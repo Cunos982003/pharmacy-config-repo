@@ -2,16 +2,22 @@ package re.edu.pharmacyservice;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import re.edu.pharmacyservice.KafkaProperties;
 
 @Service
 @RefreshScope
 public class NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
+
+    @Autowired
+    private KafkaProperties kafkaProperties;
 
     @Value("${spring.kafka.template.default-topic:medicine-stock-events}")
     private String topicName;
